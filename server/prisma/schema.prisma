@@ -11,3 +11,179 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// AUTH AND MULTI-TENANCY
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String?  @map("full_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // RELATIONSHIPS
+  sentInvitations Invitation[]
+  memberships     OrgMember[]
+  incidents       Incident[]   @relation("AcknowledgedBy")
+
+  @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique // For public status pages: /p/:slug
+  isPublic  Boolean  @default(true) @map("is_public")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  members      OrgMember[]
+  monitors     Monitor[]
+  subscription Subscription?
+  invitations  Invitation[]
+
+  @@map("organizations")
+}
+
+model OrgMember {
+  id        String   @id @default(uuid())
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("org_members")
+}
+
+// 2. MONITORING & TIME-SERIES ENGINE
+
+enum MonitorStatus {
+  UP
+  DOWN
+  DEGRADED
+  PENDING
+}
+
+enum MonitorMethod {
+  GET
+  POST
+  HEAD
+}
+
+model Monitor {
+  id              String        @id @default(uuid())
+  name            String
+  url             String
+  method          MonitorMethod @default(GET)
+  intervalSeconds Int           @default(300) @map("interval_seconds") // 60 for Pro, 300 for Free
+  currentStatus   MonitorStatus @default(PENDING) @map("current_status")
+  isActive        Boolean       @default(true) @map("is_active")
+  lastCheckedAt   DateTime?     @map("last_checked_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  heartbeats Heartbeat[]
+  incidents  Incident[]
+
+  // Fast index for BullMQ/Cron worker polling
+  @@index([isActive, lastCheckedAt])
+  @@map("monitors")
+}
+
+model Heartbeat {
+  id             BigInt   @id @default(autoincrement())
+  statusCode     Int?     @map("status_code") // e.g., 200, 502 (null if timeout)
+  responseTimeMs Int      @map("response_time_ms")
+  isUp           Boolean  @map("is_up")
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  monitorId String  @map("monitor_id")
+  monitor   Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  // Crucial composite index for fast time-series aggregation & chart queries
+  @@index([monitorId, createdAt(sort: Desc)])
+  @@map("heartbeats")
+}
+
+model Incident {
+  id         String    @id @default(uuid())
+  cause      String // e.g. "HTTP 502 Bad Gateway", "Connection timeout"
+  startedAt  DateTime  @default(now()) @map("started_at")
+  resolvedAt DateTime? @map("resolved_at") // null = ongoing incident
+
+  monitorId String  @map("monitor_id")
+  monitor   Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  acknowledgedById String? @map("acknowledged_by_id")
+  acknowledgedBy   User?   @relation("AcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  @@index([monitorId, startedAt(sort: Desc)])
+  @@map("incidents")
+}
+
+// 3. BILLING & SUBSCRIPTIONS
+
+enum PlanTier {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  planTier             PlanTier           @default(FREE) @map("plan_tier")
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  organizationId String       @unique @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String // Target teammate's email
+  role      Role     @default(MEMBER) // Pre-assigned role
+  token     String   @unique // Secure random crypto string
+  expiresAt DateTime // Valid for 48 hours or 7 days
+  createdAt DateTime @default(now())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  invitedById String @map("invited_by_id")
+  invitedBy   User   @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("invitations")
+}
