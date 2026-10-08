@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/app.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,9 +23,17 @@
     "pg": "^8.23.1",
     "prisma": "^7.10.0",
     "redis": "^6.2.1",
+    "router": "^2.2.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.4",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
