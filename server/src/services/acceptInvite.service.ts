@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import  prisma  from "../config/prisma.js"
+import  {prisma}  from "../config/prisma.js"
 import { AppError } from "../errors/AppError.js";
 
 export const acceptInvitation = async({token,fullName,password}) => {

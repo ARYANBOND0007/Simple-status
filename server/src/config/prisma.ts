@@ -1,12 +1,13 @@
-import { PrismaClient } from "../../generated/prisma/client.js";
+import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../../generated/prisma/client";
 
-const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL
-});
+const connectionString = process.env.DATABASE_URL;
 
-const prisma = new PrismaClient({
-    adapter
-});
+if (!connectionString) {
+  throw new Error("DATABASE_URL is missing");
+}
 
-export default prisma;
+const adapter = new PrismaPg({ connectionString });
+
+export const prisma = new PrismaClient({ adapter });

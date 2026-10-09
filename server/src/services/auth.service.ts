@@ -1,6 +1,6 @@
 // services/auth.service.js
 import bcrypt from "bcrypt";
-import  prisma from "../config/prisma.js";
+import  {prisma} from "../config/prisma.js";
 // services/auth.service.ts
 import { AppError } from "../errors/AppError.js";
 

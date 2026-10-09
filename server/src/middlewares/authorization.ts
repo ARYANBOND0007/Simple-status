@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import prisma  from "../config/prisma.js";
+import {prisma}  from "../config/prisma.js";
 
 export const requireRole = (...allowedRoles : string[]) => {
     return (req: Request, res: Response, next : NextFunction) => {

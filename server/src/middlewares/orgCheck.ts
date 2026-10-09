@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma.js";
+import {prisma} from "../config/prisma.js";
 
 export const requireOrganization = async (
   req: Request,
