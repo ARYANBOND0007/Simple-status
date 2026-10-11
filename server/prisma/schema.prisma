@@ -89,12 +89,13 @@ model Monitor {
   name            String
   url             String
   method          MonitorMethod @default(GET)
-  intervalSeconds Int           @default(300) @map("interval_seconds") // 60 for Pro, 300 for Free
+  intervalSeconds Int           @default(300) @map("interval_seconds")
   currentStatus   MonitorStatus @default(PENDING) @map("current_status")
   isActive        Boolean       @default(true) @map("is_active")
   lastCheckedAt   DateTime?     @map("last_checked_at")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
+  nextPingAt      DateTime      @default(now())
 
   organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

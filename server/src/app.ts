@@ -5,6 +5,7 @@ import cors from "cors";
 
 import authRoutes from "./routes/signup.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
+import loginRoutes from "./routes/login.routes.js";
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(
     credentials: true,
   })
 );
+
+
+app.use("/api/auth", loginRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api", invitationRoutes);
