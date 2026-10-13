@@ -105,7 +105,7 @@ model Monitor {
   incidents  Incident[]
 
   // Fast index for BullMQ/Cron worker polling
-  @@index([isActive, lastCheckedAt])
+ @@index([isActive, nextPingAt])
   @@map("monitors")
 }
 

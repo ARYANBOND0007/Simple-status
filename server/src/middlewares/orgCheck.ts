@@ -8,6 +8,11 @@ export const requireOrganization = async (
 ) => {
   try {
     const organizationId = req.params.organizationId;
+     if (!req.orgMember) {
+      return res.status(403).json({
+        message: "Organization membership required",
+      });
+    }
 
     if (typeof organizationId !== "string") {
       return res.status(400).json({
